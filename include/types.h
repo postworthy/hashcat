@@ -448,43 +448,44 @@ typedef enum outfile_fmt
 
 typedef enum parser_rc
 {
-  PARSER_OK                  = 0,
-  PARSER_COMMENT             = -1,
-  PARSER_GLOBAL_ZERO         = -2,
-  PARSER_GLOBAL_LENGTH       = -3,
-  PARSER_HASH_LENGTH         = -4,
-  PARSER_HASH_VALUE          = -5,
-  PARSER_SALT_LENGTH         = -6,
-  PARSER_SALT_VALUE          = -7,
-  PARSER_SALT_ITERATION      = -8,
-  PARSER_SEPARATOR_UNMATCHED = -9,
-  PARSER_SIGNATURE_UNMATCHED = -10,
-  PARSER_HCCAPX_FILE_SIZE    = -11,
-  PARSER_HCCAPX_EAPOL_LEN    = -12,
-  PARSER_PSAFE2_FILE_SIZE    = -13,
-  PARSER_PSAFE3_FILE_SIZE    = -14,
-  PARSER_TC_FILE_SIZE        = -15,
-  PARSER_VC_FILE_SIZE        = -16,
-  PARSER_SIP_AUTH_DIRECTIVE  = -17,
-  PARSER_HASH_FILE           = -18,
-  PARSER_HASH_ENCODING       = -19,
-  PARSER_SALT_ENCODING       = -20,
-  PARSER_LUKS_FILE_SIZE      = -21,
-  PARSER_LUKS_MAGIC          = -22,
-  PARSER_LUKS_VERSION        = -23,
-  PARSER_LUKS_CIPHER_TYPE    = -24,
-  PARSER_LUKS_CIPHER_MODE    = -25,
-  PARSER_LUKS_HASH_TYPE      = -26,
-  PARSER_LUKS_KEY_SIZE       = -27,
-  PARSER_LUKS_KEY_DISABLED   = -28,
-  PARSER_LUKS_KEY_STRIPES    = -29,
-  PARSER_LUKS_HASH_CIPHER    = -30,
-  PARSER_HCCAPX_SIGNATURE    = -31,
-  PARSER_HCCAPX_VERSION      = -32,
-  PARSER_HCCAPX_MESSAGE_PAIR = -33,
-  PARSER_TOKEN_ENCODING      = -34,
-  PARSER_TOKEN_LENGTH        = -35,
-  PARSER_UNKNOWN_ERROR       = -255
+  PARSER_OK                   = 0,
+  PARSER_COMMENT              = -1,
+  PARSER_GLOBAL_ZERO          = -2,
+  PARSER_GLOBAL_LENGTH        = -3,
+  PARSER_HASH_LENGTH          = -4,
+  PARSER_HASH_VALUE           = -5,
+  PARSER_SALT_LENGTH          = -6,
+  PARSER_SALT_VALUE           = -7,
+  PARSER_SALT_ITERATION       = -8,
+  PARSER_SEPARATOR_UNMATCHED  = -9,
+  PARSER_SIGNATURE_UNMATCHED  = -10,
+  PARSER_HCCAPX_FILE_SIZE     = -11,
+  PARSER_HCCAPX_EAPOL_LEN     = -12,
+  PARSER_PSAFE2_FILE_SIZE     = -13,
+  PARSER_PSAFE3_FILE_SIZE     = -14,
+  PARSER_TC_FILE_SIZE         = -15,
+  PARSER_VC_FILE_SIZE         = -16,
+  PARSER_SIP_AUTH_DIRECTIVE   = -17,
+  PARSER_HASH_FILE            = -18,
+  PARSER_HASH_ENCODING        = -19,
+  PARSER_SALT_ENCODING        = -20,
+  PARSER_LUKS_FILE_SIZE       = -21,
+  PARSER_LUKS_MAGIC           = -22,
+  PARSER_LUKS_VERSION         = -23,
+  PARSER_LUKS_CIPHER_TYPE     = -24,
+  PARSER_LUKS_CIPHER_MODE     = -25,
+  PARSER_LUKS_HASH_TYPE       = -26,
+  PARSER_LUKS_KEY_SIZE        = -27,
+  PARSER_LUKS_KEY_DISABLED    = -28,
+  PARSER_LUKS_KEY_STRIPES     = -29,
+  PARSER_LUKS_HASH_CIPHER     = -30,
+  PARSER_HCCAPX_SIGNATURE     = -31,
+  PARSER_HCCAPX_VERSION       = -32,
+  PARSER_HCCAPX_MESSAGE_PAIR  = -33,
+  PARSER_TOKEN_ENCODING       = -34,
+  PARSER_TOKEN_LENGTH         = -35,
+  PARSER_INSUFFICIENT_ENTROPY = -36,
+  PARSER_UNKNOWN_ERROR        = -255
 
 } parser_rc_t;
 
@@ -694,8 +695,7 @@ typedef enum token_attr
   TOKEN_ATTR_VERIFY_HEX         = 1 << 5,
   TOKEN_ATTR_VERIFY_BASE64A     = 1 << 6,
   TOKEN_ATTR_VERIFY_BASE64B     = 1 << 7,
-  TOKEN_ATTR_VERIFY_BASE64C     = 1 << 8,
-  TOKEN_ATTR_TERMINATE_STRING   = 1 << 9,
+  TOKEN_ATTR_VERIFY_BASE64C     = 1 << 8
 
 } token_attr_t;
 
@@ -953,6 +953,7 @@ typedef struct hc_device_param
   u32     device_processors;
   u64     device_maxmem_alloc;
   u64     device_global_mem;
+  u64     device_available_mem;
   u32     device_maxclock_frequency;
   size_t  device_maxworkgroup_size;
   u64     device_local_mem_size;
@@ -1076,6 +1077,7 @@ typedef struct hc_device_param
   u64     outerloop_pos;
   u64     outerloop_left;
   double  outerloop_msec;
+  double  outerloop_multi;
 
   u32     innerloop_pos;
   u32     innerloop_left;

@@ -259,22 +259,22 @@ const char *status_get_hash_target (const hashcat_ctx_t *hashcat_ctx)
     {
       char *tmp_buf;
 
-      wpa_t *wpa = (wpa_t *) hashes->esalts_buf;
+      wpa_eapol_t *wpa_eapol = (wpa_eapol_t *) hashes->esalts_buf;
 
       hc_asprintf (&tmp_buf, "%s (AP:%02x:%02x:%02x:%02x:%02x:%02x STA:%02x:%02x:%02x:%02x:%02x:%02x)",
         (char *) hashes->salts_buf[0].salt_buf,
-        wpa->orig_mac_ap[0],
-        wpa->orig_mac_ap[1],
-        wpa->orig_mac_ap[2],
-        wpa->orig_mac_ap[3],
-        wpa->orig_mac_ap[4],
-        wpa->orig_mac_ap[5],
-        wpa->orig_mac_sta[0],
-        wpa->orig_mac_sta[1],
-        wpa->orig_mac_sta[2],
-        wpa->orig_mac_sta[3],
-        wpa->orig_mac_sta[4],
-        wpa->orig_mac_sta[5]);
+        wpa_eapol->orig_mac_ap[0],
+        wpa_eapol->orig_mac_ap[1],
+        wpa_eapol->orig_mac_ap[2],
+        wpa_eapol->orig_mac_ap[3],
+        wpa_eapol->orig_mac_ap[4],
+        wpa_eapol->orig_mac_ap[5],
+        wpa_eapol->orig_mac_sta[0],
+        wpa_eapol->orig_mac_sta[1],
+        wpa_eapol->orig_mac_sta[2],
+        wpa_eapol->orig_mac_sta[3],
+        wpa_eapol->orig_mac_sta[4],
+        wpa_eapol->orig_mac_sta[5]);
 
       return tmp_buf;
     }
@@ -1426,8 +1426,10 @@ double status_get_hashes_msec_dev_benchmark (const hashcat_ctx_t *hashcat_ctx, c
 
   if (device_param->skipped == false)
   {
-    speed_cnt  += device_param->speed_cnt[0];
-    speed_msec += device_param->speed_msec[0];
+    const u32 speed_pos = MAX (device_param->speed_pos, 1);
+
+    speed_cnt  += device_param->speed_cnt[speed_pos - 1];
+    speed_msec += device_param->speed_msec[speed_pos - 1];
   }
 
   double hashes_dev_msec = 0;
@@ -1782,14 +1784,7 @@ double status_get_runtime_msec_dev (const hashcat_ctx_t *hashcat_ctx, const int 
 
   if (device_param->skipped == true) return 0;
 
-  float q = 1;
-
-  if ((device_param->speed_only_finish == true) && (device_param->speed_msec[0] > 4000))
-  {
-    q = (float) device_param->outerloop_left / (float) device_param->speed_cnt[0];
-  }
-
-  return device_param->outerloop_msec * q;
+  return device_param->outerloop_msec;
 }
 
 int status_get_kernel_accel_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)

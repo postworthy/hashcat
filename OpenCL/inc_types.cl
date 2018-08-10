@@ -361,7 +361,7 @@ DECLSPEC u32 hc_bfe_S (const u32 a, const u32 b, const u32 c)
   return amd_bfe (a, b, c);
 }
 
-DECLSPEC u32 hc_bytealign (const u32x a, const u32x b, const u32x c)
+DECLSPEC u32x hc_bytealign (const u32x a, const u32x b, const u32x c)
 {
   return amd_bytealign (a, b, c);
 }
@@ -1194,7 +1194,7 @@ typedef struct pdf
 
 } pdf_t;
 
-typedef struct wpa
+typedef struct wpa_eapol
 {
   u32  pke[32];
   u32  eapol[64 + 16];
@@ -1215,7 +1215,18 @@ typedef struct wpa
   int  detected_le;
   int  detected_be;
 
-} wpa_t;
+} wpa_eapol_t;
+
+typedef struct wpa_pmkid
+{
+  u32  pmkid[4];
+  u32  pmkid_data[16];
+  u8   orig_mac_ap[6];
+  u8   orig_mac_sta[6];
+  u8   essid_len;
+  u32  essid_buf[16];
+
+} wpa_pmkid_t;
 
 typedef struct bitcoin_wallet
 {
@@ -1234,7 +1245,7 @@ typedef struct sip
   u32 salt_buf[32];
   u32 salt_len;
 
-  u32 esalt_buf[48];
+  u32 esalt_buf[256];
   u32 esalt_len;
 
 } sip_t;
@@ -1517,6 +1528,12 @@ typedef struct electrum_wallet
 
 } electrum_wallet_t;
 
+typedef struct ansible_vault
+{
+  u32 ct_data_buf[4096];
+  u32 ct_data_len;
+} ansible_vault_t;
+
 typedef struct pdf14_tmp
 {
   u32 digest[4];
@@ -1589,7 +1606,7 @@ typedef struct sha512crypt_tmp
 
 } sha512crypt_tmp_t;
 
-typedef struct wpa_tmp
+typedef struct wpa_pbkdf2_tmp
 {
   u32 ipad[5];
   u32 opad[5];
@@ -1597,13 +1614,13 @@ typedef struct wpa_tmp
   u32 dgst[10];
   u32 out[10];
 
-} wpa_tmp_t;
+} wpa_pbkdf2_tmp_t;
 
-typedef struct wpapmk_tmp
+typedef struct wpa_pmk_tmp
 {
   u32 out[8];
 
-} wpapmk_tmp_t;
+} wpa_pmk_tmp_t;
 
 typedef struct bitcoin_wallet_tmp
 {

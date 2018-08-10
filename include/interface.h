@@ -20,6 +20,12 @@ static const char LM_ZERO_HASH[]    = "aad3b435b51404ee";
 static const char LM_MASKED_PLAIN[] = "[notfound]";
 
 /**
+ * entropy check (truecrypt, veracrypt, ...)
+ */
+
+static const float MIN_SUFFICIENT_ENTROPY_FILE = 7.0f;
+
+/**
  * algo specific
  */
 
@@ -176,7 +182,7 @@ typedef struct pdf
 
 } pdf_t;
 
-typedef struct wpa
+typedef struct wpa_eapol
 {
   u32  pke[32];
   u32  eapol[64 + 16];
@@ -197,7 +203,18 @@ typedef struct wpa
   int  detected_le;
   int  detected_be;
 
-} wpa_t;
+} wpa_eapol_t;
+
+typedef struct wpa_pmkid
+{
+  u32  pmkid[4];
+  u32  pmkid_data[16];
+  u8   orig_mac_ap[6];
+  u8   orig_mac_sta[6];
+  u8   essid_len;
+  u32  essid_buf[16];
+
+} wpa_pmkid_t;
 
 typedef struct bitcoin_wallet
 {
@@ -216,7 +233,7 @@ typedef struct sip
   u32 salt_buf[32];
   u32 salt_len;
 
-  u32 esalt_buf[48];
+  u32 esalt_buf[256];
   u32 esalt_len;
 
 } sip_t;
@@ -514,6 +531,12 @@ typedef struct electrum_wallet
 
 } electrum_wallet_t;
 
+typedef struct ansible_vault
+{
+  u32 ct_data_buf[4096];
+  u32 ct_data_len;
+} ansible_vault_t;
+
 typedef struct luks_tmp
 {
   u32 ipad32[8];
@@ -586,7 +609,7 @@ typedef struct sha512crypt_tmp
 
 } sha512crypt_tmp_t;
 
-typedef struct wpa_tmp
+typedef struct wpa_pbkdf2_tmp
 {
   u32 ipad[5];
   u32 opad[5];
@@ -594,13 +617,13 @@ typedef struct wpa_tmp
   u32 dgst[10];
   u32 out[10];
 
-} wpa_tmp_t;
+} wpa_pbkdf2_tmp_t;
 
-typedef struct wpapmk_tmp
+typedef struct wpa_pmk_tmp
 {
   u32 out[8];
 
-} wpapmk_tmp_t;
+} wpa_pmk_tmp_t;
 
 typedef struct bitcoin_wallet_tmp
 {
@@ -1029,7 +1052,7 @@ typedef enum hash_type
   HASH_TYPE_SHA384              = 7,
   HASH_TYPE_SHA512              = 8,
   HASH_TYPE_DCC2                = 9,
-  HASH_TYPE_WPA                 = 10,
+  HASH_TYPE_WPA_EAPOL           = 10,
   HASH_TYPE_LM                  = 11,
   HASH_TYPE_DESCRYPT            = 12,
   HASH_TYPE_ORACLEH             = 13,
@@ -1087,6 +1110,9 @@ typedef enum hash_type
   HASH_TYPE_CRAM_MD5_DOVECOT    = 65,
   HASH_TYPE_JWT                 = 66,
   HASH_TYPE_ELECTRUM_WALLET     = 67,
+  HASH_TYPE_WPA_PMKID_PBKDF2    = 68,
+  HASH_TYPE_WPA_PMKID_PMK       = 69,
+  HASH_TYPE_ANSIBLE_VAULT       = 70,
 
 } hash_type_t;
 
@@ -1136,8 +1162,8 @@ typedef enum kern_type
   KERN_TYPE_DCC2                    = 2100,
   KERN_TYPE_MD5PIX                  = 2400,
   KERN_TYPE_MD5ASA                  = 2410,
-  KERN_TYPE_WPA                     = 2500,
-  KERN_TYPE_WPAPMK                  = 2501,
+  KERN_TYPE_WPA_EAPOL_PBKDF2        = 2500,
+  KERN_TYPE_WPA_EAPOL_PMK           = 2501,
   KERN_TYPE_MD55                    = 2600,
   KERN_TYPE_MD55_PWSLT1             = 2610,
   KERN_TYPE_MD55_PWSLT2             = 2710,
@@ -1294,6 +1320,9 @@ typedef enum kern_type
   KERN_TYPE_JWT_HS384               = 16512,
   KERN_TYPE_JWT_HS512               = 16513,
   KERN_TYPE_ELECTRUM_WALLET13       = 16600,
+  KERN_TYPE_WPA_PMKID_PBKDF2        = 16800,
+  KERN_TYPE_WPA_PMKID_PMK           = 16801,
+  KERN_TYPE_ANSIBLE_VAULT           = 16900,
   KERN_TYPE_PLAINTEXT               = 99999,
 
 } kern_type_t;
@@ -1306,8 +1335,8 @@ typedef enum rounds_count
 {
    ROUNDS_PHPASS             = (1 << 11), // $P$B
    ROUNDS_DCC2               = 10240,
-   ROUNDS_WPA                = 4096,
-   ROUNDS_WPAPMK             = 1,
+   ROUNDS_WPA_PBKDF2         = 4096,
+   ROUNDS_WPA_PMK            = 1,
    ROUNDS_BCRYPT             = (1 << 5),
    ROUNDS_PSAFE3             = 2048,
    ROUNDS_ANDROIDPIN         = 1024,
@@ -1370,6 +1399,7 @@ typedef enum rounds_count
    ROUNDS_ETHEREUM_PBKDF2    = 262144 - 1,
    ROUNDS_APPLE_SECURE_NOTES = 20000,
    ROUNDS_ETHEREUM_PRESALE   = 2000 - 1,
+   ROUNDS_ANSIBLE_VAULT      = 10000,
    ROUNDS_STDOUT             = 0
 
 } rounds_count_t;
@@ -1424,7 +1454,7 @@ int sha512_parse_hash             (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int sha512s_parse_hash            (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int sha512crypt_parse_hash        (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int vb30_parse_hash               (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
-int wpa_parse_hash                (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int wpa_eapol_parse_hash          (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int psafe2_parse_hash             (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int psafe3_parse_hash             (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int ikepsk_md5_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
@@ -1552,6 +1582,9 @@ int ethereum_presale_parse_hash   (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int jwt_parse_hash                (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int electrum_wallet13_parse_hash  (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int filevault2_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int wpa_pmkid_pbkdf2_parse_hash   (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int wpa_pmkid_pmk_parse_hash      (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int ansible_vault_parse_hash      (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 
 /**
  * hook functions
