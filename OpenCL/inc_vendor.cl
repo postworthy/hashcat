@@ -19,20 +19,6 @@
 #define IS_ACCEL
 #endif
 
-#if   DEVICE_TYPE == DEVICE_TYPE_CPU
-#elif DEVICE_TYPE == DEVICE_TYPE_GPU
-#define REAL_SHM
-#elif DEVICE_TYPE == DEVICE_TYPE_ACCEL
-#endif
-
-#ifdef REAL_SHM
-#define SHM_TYPE __local
-#define SCR_TYPE __local
-#else
-#define SHM_TYPE __constant
-#define SCR_TYPE
-#endif
-
 /**
  * vendor specific
  */
@@ -78,6 +64,19 @@
 #define IS_GENERIC
 #else
 #define IS_GENERIC
+#endif
+
+#define LOCAL_MEM_TYPE_LOCAL  1
+#define LOCAL_MEM_TYPE_GLOBAL 2
+
+#if LOCAL_MEM_TYPE == LOCAL_MEM_TYPE_LOCAL
+#define REAL_SHM
+#endif
+
+#ifdef REAL_SHM
+#define SHM_TYPE __local
+#else
+#define SHM_TYPE __constant
 #endif
 
 /**

@@ -71,7 +71,7 @@ static char *hm_SYSFS_get_syspath_hwmon (hashcat_ctx_t *hashcat_ctx, const int d
 
   char *hwmon = hcmalloc (HCBUFSIZ_TINY);
 
-  snprintf (hwmon, HCBUFSIZ_TINY - 1, "%s/hwmon", syspath);
+  snprintf (hwmon, HCBUFSIZ_TINY, "%s/hwmon", syspath);
 
   char *hwmonN = first_file_in_directory (hwmon);
 
@@ -87,7 +87,7 @@ static char *hm_SYSFS_get_syspath_hwmon (hashcat_ctx_t *hashcat_ctx, const int d
     return NULL;
   }
 
-  snprintf (hwmon, HCBUFSIZ_TINY - 1, "%s/hwmon/%s", syspath, hwmonN);
+  snprintf (hwmon, HCBUFSIZ_TINY, "%s/hwmon/%s", syspath, hwmonN);
 
   hcfree (syspath);
 
@@ -2004,6 +2004,10 @@ int hwmon_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   hwmon_ctx->enabled = false;
 
+  #if !defined (WITH_HWMON)
+  return 0;
+  #endif // WITH_HWMON
+
   if (user_options->example_hashes    == true) return 0;
   if (user_options->keyspace          == true) return 0;
   if (user_options->left              == true) return 0;
@@ -2012,7 +2016,7 @@ int hwmon_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->stdout_flag       == true) return 0;
   if (user_options->usage             == true) return 0;
   if (user_options->version           == true) return 0;
-  if (user_options->gpu_temp_disable  == true) return 0;
+  if (user_options->hwmon_disable     == true) return 0;
 
   hwmon_ctx->hm_device = (hm_attrs_t *) hccalloc (DEVICES_MAX, sizeof (hm_attrs_t));
 

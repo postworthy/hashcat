@@ -55,10 +55,10 @@ static char *status_get_rules_file (const hashcat_ctx_t *hashcat_ctx)
 
     for (i = 0; i < user_options->rp_files_cnt - 1; i++)
     {
-      tmp_len += snprintf (tmp_buf + tmp_len, HCBUFSIZ_TINY - tmp_len - 1, "%s, ", user_options->rp_files[i]);
+      tmp_len += snprintf (tmp_buf + tmp_len, HCBUFSIZ_TINY - tmp_len, "%s, ", user_options->rp_files[i]);
     }
 
-    tmp_len += snprintf (tmp_buf + tmp_len, HCBUFSIZ_TINY - tmp_len - 1, "%s", user_options->rp_files[i]);
+    tmp_len += snprintf (tmp_buf + tmp_len, HCBUFSIZ_TINY - tmp_len, "%s", user_options->rp_files[i]);
 
     tmp_buf[tmp_len] = 0;
 
@@ -78,34 +78,34 @@ void format_timer_display (struct tm *tm, char *buf, size_t len)
     const char *time_entity1 = ((tm->tm_year - 70) == 1) ? time_entities_s[0] : time_entities_m[0];
     const char *time_entity2 = ( tm->tm_yday       == 1) ? time_entities_s[1] : time_entities_m[1];
 
-    snprintf (buf, len - 1, "%d %s, %d %s", tm->tm_year - 70, time_entity1, tm->tm_yday, time_entity2);
+    snprintf (buf, len, "%d %s, %d %s", tm->tm_year - 70, time_entity1, tm->tm_yday, time_entity2);
   }
   else if (tm->tm_yday)
   {
     const char *time_entity1 = (tm->tm_yday == 1) ? time_entities_s[1] : time_entities_m[1];
     const char *time_entity2 = (tm->tm_hour == 1) ? time_entities_s[2] : time_entities_m[2];
 
-    snprintf (buf, len - 1, "%d %s, %d %s", tm->tm_yday, time_entity1, tm->tm_hour, time_entity2);
+    snprintf (buf, len, "%d %s, %d %s", tm->tm_yday, time_entity1, tm->tm_hour, time_entity2);
   }
   else if (tm->tm_hour)
   {
     const char *time_entity1 = (tm->tm_hour == 1) ? time_entities_s[2] : time_entities_m[2];
     const char *time_entity2 = (tm->tm_min  == 1) ? time_entities_s[3] : time_entities_m[3];
 
-    snprintf (buf, len - 1, "%d %s, %d %s", tm->tm_hour, time_entity1, tm->tm_min, time_entity2);
+    snprintf (buf, len, "%d %s, %d %s", tm->tm_hour, time_entity1, tm->tm_min, time_entity2);
   }
   else if (tm->tm_min)
   {
     const char *time_entity1 = (tm->tm_min == 1) ? time_entities_s[3] : time_entities_m[3];
     const char *time_entity2 = (tm->tm_sec == 1) ? time_entities_s[4] : time_entities_m[4];
 
-    snprintf (buf, len - 1, "%d %s, %d %s", tm->tm_min, time_entity1, tm->tm_sec, time_entity2);
+    snprintf (buf, len, "%d %s, %d %s", tm->tm_min, time_entity1, tm->tm_sec, time_entity2);
   }
   else
   {
     const char *time_entity1 = (tm->tm_sec == 1) ? time_entities_s[4] : time_entities_m[4];
 
-    snprintf (buf, len - 1, "%d %s", tm->tm_sec, time_entity1);
+    snprintf (buf, len, "%d %s", tm->tm_sec, time_entity1);
   }
 }
 
@@ -133,11 +133,43 @@ void format_speed_display (double val, char *buf, size_t len)
 
   if (level == 0)
   {
-    snprintf (buf, len - 1, "%.0f ", val);
+    snprintf (buf, len, "%.0f ", val);
   }
   else
   {
-    snprintf (buf, len - 1, "%.1f %c", val, UNITS[level]);
+    snprintf (buf, len, "%.1f %c", val, UNITS[level]);
+  }
+}
+
+void format_speed_display_1k (double val, char *buf, size_t len)
+{
+  if (val <= 0)
+  {
+    buf[0] = '0';
+    buf[1] = ' ';
+    buf[2] = 0;
+
+    return;
+  }
+
+  u32 level = 0;
+
+  while (val > 999)
+  {
+    val /= 1000;
+
+    level++;
+  }
+
+  /* generate output */
+
+  if (level == 0)
+  {
+    snprintf (buf, len, "%.0f ", val);
+  }
+  else
+  {
+    snprintf (buf, len, "%.1f %c", val, UNITS[level]);
   }
 }
 
@@ -197,6 +229,22 @@ char *status_get_session (const hashcat_ctx_t *hashcat_ctx)
 
   return strdup (user_options->session);
 }
+
+#ifdef WITH_BRAIN
+int status_get_brain_session (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  return user_options->brain_session;
+}
+
+int status_get_brain_attack (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  return user_options->brain_attack;
+}
+#endif
 
 const char *status_get_status_string (const hashcat_ctx_t *hashcat_ctx)
 {
@@ -825,11 +873,11 @@ char *status_get_guess_candidates_dev (const hashcat_ctx_t *hashcat_ctx, const i
 
   if (user_options_extra->attack_kern == ATTACK_KERN_BF)
   {
-    snprintf (display, HCBUFSIZ_TINY - 1, "[Generating]");
+    snprintf (display, HCBUFSIZ_TINY, "[Generating]");
   }
   else
   {
-    snprintf (display, HCBUFSIZ_TINY - 1, "[Copying]");
+    snprintf (display, HCBUFSIZ_TINY, "[Copying]");
   }
 
   if (device_param->skipped == true) return display;
@@ -842,8 +890,8 @@ char *status_get_guess_candidates_dev (const hashcat_ctx_t *hashcat_ctx, const i
   const u32 innerloop_first = 0;
   const u32 innerloop_last  = device_param->innerloop_left - 1;
 
-  plain_t plain1 = { 0, 0, 0, outerloop_first, innerloop_first };
-  plain_t plain2 = { 0, 0, 0, outerloop_last,  innerloop_last  };
+  plain_t plain1 = { outerloop_first, innerloop_first, 0, 0, 0 };
+  plain_t plain2 = { outerloop_last,  innerloop_last,  0, 0, 0 };
 
   u32 plain_buf1[(64 * 2) + 2] = { 0 };
   u32 plain_buf2[(64 * 2) + 2] = { 0 };
@@ -870,14 +918,14 @@ char *status_get_guess_candidates_dev (const hashcat_ctx_t *hashcat_ctx, const i
     plain_ptr1[plain_len1 * 2] = 0;
     plain_ptr2[plain_len2 * 2] = 0;
 
-    snprintf (display, HCBUFSIZ_TINY - 1, "$HEX[%s] -> $HEX[%s]", plain_ptr1, plain_ptr2);
+    snprintf (display, HCBUFSIZ_TINY, "$HEX[%s] -> $HEX[%s]", plain_ptr1, plain_ptr2);
   }
   else
   {
     plain_ptr1[plain_len1] = 0;
     plain_ptr2[plain_len2] = 0;
 
-    snprintf (display, HCBUFSIZ_TINY - 1, "%s -> %s", plain_ptr1, plain_ptr2);
+    snprintf (display, HCBUFSIZ_TINY, "%s -> %s", plain_ptr1, plain_ptr2);
   }
 
   return display;
@@ -1112,13 +1160,13 @@ char *status_get_time_estimated_relative (const hashcat_ctx_t *hashcat_ctx)
 
       format_timer_display (tmp_left, display_left, HCBUFSIZ_TINY);
 
-      snprintf (display, HCBUFSIZ_TINY - 1, "%s; Runtime limited: %s", tmp_display, display_left);
+      snprintf (display, HCBUFSIZ_TINY, "%s; Runtime limited: %s", tmp_display, display_left);
 
       free (display_left);
     }
     else
     {
-      snprintf (display, HCBUFSIZ_TINY - 1, "%s; Runtime limit exceeded", tmp_display);
+      snprintf (display, HCBUFSIZ_TINY, "%s; Runtime limit exceeded", tmp_display);
     }
 
     free (tmp_display);
@@ -1303,9 +1351,16 @@ u64 status_get_progress_end (const hashcat_ctx_t *hashcat_ctx)
 
     progress_end = MIN (user_options->limit, status_ctx->words_base) * hashes->salts_cnt;
 
-    if      (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) progress_end  *= straight_ctx->kernel_rules_cnt;
-    else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)    progress_end  *= combinator_ctx->combs_cnt;
-    else if (user_options_extra->attack_kern == ATTACK_KERN_BF)       progress_end  *= mask_ctx->bfs_cnt;
+    if (user_options->slow_candidates == true)
+    {
+      // nothing to do
+    }
+    else
+    {
+      if      (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) progress_end  *= straight_ctx->kernel_rules_cnt;
+      else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)    progress_end  *= combinator_ctx->combs_cnt;
+      else if (user_options_extra->attack_kern == ATTACK_KERN_BF)       progress_end  *= mask_ctx->bfs_cnt;
+    }
   }
 
   return progress_end;
@@ -1328,9 +1383,16 @@ u64 status_get_progress_skip (const hashcat_ctx_t *hashcat_ctx)
 
     progress_skip = MIN (user_options->skip, status_ctx->words_base) * hashes->salts_cnt;
 
-    if      (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) progress_skip *= straight_ctx->kernel_rules_cnt;
-    else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)    progress_skip *= combinator_ctx->combs_cnt;
-    else if (user_options_extra->attack_kern == ATTACK_KERN_BF)       progress_skip *= mask_ctx->bfs_cnt;
+    if (user_options->slow_candidates == true)
+    {
+      // nothing to do
+    }
+    else
+    {
+      if      (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) progress_skip *= straight_ctx->kernel_rules_cnt;
+      else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)    progress_skip *= combinator_ctx->combs_cnt;
+      else if (user_options_extra->attack_kern == ATTACK_KERN_BF)       progress_skip *= mask_ctx->bfs_cnt;
+    }
   }
 
   return progress_skip;
@@ -1656,6 +1718,216 @@ char *status_get_cpt (const hashcat_ctx_t *hashcat_ctx)
   return cpt;
 }
 
+int status_get_salt_pos_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int salt_pos = 0;
+
+  if (device_param->skipped == false)
+  {
+    salt_pos = (int) device_param->kernel_params_buf32[27];
+  }
+
+  return salt_pos;
+}
+
+int status_get_innerloop_pos_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int innerloop_pos = 0;
+
+  if (device_param->skipped == false)
+  {
+    innerloop_pos = (int) device_param->innerloop_pos;
+  }
+
+  return innerloop_pos;
+}
+
+int status_get_innerloop_left_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int innerloop_left = 0;
+
+  if (device_param->skipped == false)
+  {
+    innerloop_left = (int) device_param->innerloop_left;
+  }
+
+  return innerloop_left;
+}
+
+int status_get_iteration_pos_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int iteration_pos = 0;
+
+  if (device_param->skipped == false)
+  {
+    iteration_pos = (int) device_param->kernel_params_buf32[28];
+  }
+
+  return iteration_pos;
+}
+
+int status_get_iteration_left_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int iteration_left = 0;
+
+  if (device_param->skipped == false)
+  {
+    iteration_left = (int) device_param->kernel_params_buf32[29];
+  }
+
+  return iteration_left;
+}
+
+#ifdef WITH_BRAIN
+int status_get_brain_link_client_id_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int brain_client_id = -1;
+
+  if (device_param->skipped == false)
+  {
+    brain_client_id = device_param->brain_link_client_fd;
+  }
+
+  return brain_client_id;
+}
+
+int status_get_brain_link_status_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  int brain_link_status_dev = 0;
+
+  if (device_param->skipped == false)
+  {
+    if (device_param->brain_link_client_fd   != -1)   brain_link_status_dev = BRAIN_LINK_STATUS_CONNECTED;
+    if (device_param->brain_link_recv_active == true) brain_link_status_dev = BRAIN_LINK_STATUS_RECEIVING;
+    if (device_param->brain_link_send_active == true) brain_link_status_dev = BRAIN_LINK_STATUS_SENDING;
+  }
+
+  return brain_link_status_dev;
+}
+
+char *status_get_brain_link_recv_bytes_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  u64 brain_link_recv_bytes = 0;
+
+  if (device_param->skipped == false)
+  {
+    brain_link_recv_bytes = device_param->brain_link_recv_bytes;
+  }
+
+  char *display = (char *) hcmalloc (HCBUFSIZ_TINY);
+
+  format_speed_display_1k (brain_link_recv_bytes, display, HCBUFSIZ_TINY);
+
+  return display;
+}
+
+char *status_get_brain_link_send_bytes_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  u64 brain_link_send_bytes = 0;
+
+  if (device_param->skipped == false)
+  {
+    brain_link_send_bytes = device_param->brain_link_send_bytes;
+  }
+
+  char *display = (char *) hcmalloc (HCBUFSIZ_TINY);
+
+  format_speed_display_1k (brain_link_send_bytes, display, HCBUFSIZ_TINY);
+
+  return display;
+}
+
+char *status_get_brain_link_recv_bytes_sec_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  u64 brain_link_recv_bytes = 0;
+
+  if (device_param->skipped == false)
+  {
+    for (int idx = 0; idx < LINK_SPEED_COUNT; idx++)
+    {
+      double ms = hc_timer_get (device_param->brain_link_recv_speed.timer[idx]);
+
+      if (ms >= 1000) continue;
+
+      brain_link_recv_bytes += device_param->brain_link_recv_speed.bytes[idx];
+    }
+  }
+
+  char *display = (char *) hcmalloc (HCBUFSIZ_TINY);
+
+  snprintf (display, HCBUFSIZ_TINY, "%.2f M", (double) (brain_link_recv_bytes * 8) / 1024 / 1024);
+
+  return display;
+}
+
+char *status_get_brain_link_send_bytes_sec_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
+{
+  const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
+
+  hc_device_param_t *device_param = &opencl_ctx->devices_param[device_id];
+
+  u64 brain_link_send_bytes = 0;
+
+  if (device_param->skipped == false)
+  {
+    for (int idx = 0; idx < LINK_SPEED_COUNT; idx++)
+    {
+      double ms = hc_timer_get (device_param->brain_link_send_speed.timer[idx]);
+
+      if (ms >= 1000) continue;
+
+      brain_link_send_bytes += device_param->brain_link_send_speed.bytes[idx];
+    }
+  }
+
+  char *display = (char *) hcmalloc (HCBUFSIZ_TINY);
+
+ snprintf (display, HCBUFSIZ_TINY, "%.2f M", (double) (brain_link_send_bytes * 8) / 1024 / 1024);
+
+  return display;
+}
+#endif
+
 char *status_get_hwmon_dev (const hashcat_ctx_t *hashcat_ctx, const int device_id)
 {
   const opencl_ctx_t *opencl_ctx = hashcat_ctx->opencl_ctx;
@@ -1664,7 +1936,7 @@ char *status_get_hwmon_dev (const hashcat_ctx_t *hashcat_ctx, const int device_i
 
   char *output_buf = (char *) hcmalloc (HCBUFSIZ_TINY);
 
-  snprintf (output_buf, HCBUFSIZ_TINY - 1, "N/A");
+  snprintf (output_buf, HCBUFSIZ_TINY, "N/A");
 
   if (device_param->skipped == true) return output_buf;
 
@@ -1719,7 +1991,7 @@ char *status_get_hwmon_dev (const hashcat_ctx_t *hashcat_ctx, const int device_i
   }
   else
   {
-    snprintf (output_buf, HCBUFSIZ_TINY - 1, "N/A");
+    snprintf (output_buf, HCBUFSIZ_TINY, "N/A");
   }
 
   hc_thread_mutex_unlock (status_ctx->mux_hwmon);
@@ -1948,9 +2220,21 @@ void status_status_destroy (hashcat_ctx_t *hashcat_ctx, hashcat_status_t *hashca
     hcfree (device_info->speed_sec_dev);
     hcfree (device_info->guess_candidates_dev);
     hcfree (device_info->hwmon_dev);
+    #ifdef WITH_BRAIN
+    hcfree (device_info->brain_link_recv_bytes_dev);
+    hcfree (device_info->brain_link_send_bytes_dev);
+    hcfree (device_info->brain_link_recv_bytes_sec_dev);
+    hcfree (device_info->brain_link_send_bytes_sec_dev);
+    #endif
 
-    device_info->speed_sec_dev        = NULL;
-    device_info->guess_candidates_dev = NULL;
-    device_info->hwmon_dev            = NULL;
+    device_info->speed_sec_dev                  = NULL;
+    device_info->guess_candidates_dev           = NULL;
+    device_info->hwmon_dev                      = NULL;
+    #ifdef WITH_BRAIN
+    device_info->brain_link_recv_bytes_dev      = NULL;
+    device_info->brain_link_send_bytes_dev      = NULL;
+    device_info->brain_link_recv_bytes_sec_dev  = NULL;
+    device_info->brain_link_send_bytes_sec_dev  = NULL;
+    #endif
   }
 }

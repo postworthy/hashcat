@@ -11,6 +11,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <inttypes.h>
 
 /**
  * zero hashes shutcut
@@ -142,7 +143,6 @@ typedef struct blake2
   u64 f[2];
   u32 buflen;
   u32 outlen;
-  u8  last_node;
 
 } blake2_t;
 
@@ -250,7 +250,7 @@ typedef struct ikepsk
   u32 nr_len;
 
   u32 msg_buf[128];
-  u32 msg_len;
+  u32 msg_len[6];
 
 } ikepsk_t;
 
@@ -280,10 +280,19 @@ typedef struct krb5tgs
 {
   u32 account_info[512];
   u32 checksum[4];
-  u32 edata2[2560];
+  u32 edata2[5120];
   u32 edata2_len;
 
 } krb5tgs_t;
+
+typedef struct krb5asrep
+{
+  u32 account_info[512];
+  u32 checksum[4];
+  u32 edata2[5120];
+  u32 edata2_len;
+
+} krb5asrep_t;
 
 typedef struct keepass
 {
@@ -308,12 +317,24 @@ typedef struct keepass
 
 } keepass_t;
 
+typedef struct keyboard_layout_mapping
+{
+  u32 src_char;
+  int src_len;
+  u32 dst_char;
+  int dst_len;
+
+} keyboard_layout_mapping_t;
+
 typedef struct tc
 {
   u32 salt_buf[32];
   u32 data_buf[112];
   u32 keyfile_buf[16];
   u32 signature;
+
+  keyboard_layout_mapping_t keyboard_layout_mapping_buf[256];
+  int                       keyboard_layout_mapping_cnt;
 
 } tc_t;
 
@@ -401,6 +422,44 @@ typedef struct oldoffice34
   u32 rc4key[2];
 
 } oldoffice34_t;
+
+typedef struct odf11_tmp
+{
+  u32  ipad[5];
+  u32  opad[5];
+
+  u32  dgst[5];
+  u32  out[5];
+
+} odf11_tmp_t;
+
+typedef struct odf11
+{
+  u32 iterations;
+  u32 iv[2];
+  u32 checksum[5];
+  u32 encrypted_data[256];
+
+} odf11_t;
+
+typedef struct odf12_tmp
+{
+  u32  ipad[5];
+  u32  opad[5];
+
+  u32  dgst[10];
+  u32  out[10];
+
+} odf12_tmp_t;
+
+typedef struct odf12
+{
+  u32 iterations;
+  u32 iv[4];
+  u32 checksum[8];
+  u32 encrypted_data[256];
+
+} odf12_t;
 
 typedef struct pstoken
 {
@@ -533,6 +592,8 @@ typedef struct electrum_wallet
 
 typedef struct ansible_vault
 {
+  u32 cipher;
+  u32 version;
   u32 ct_data_buf[4096];
   u32 ct_data_len;
 } ansible_vault_t;
@@ -708,6 +769,19 @@ typedef struct tc64_tmp
   u64  out[32];
 
 } tc64_tmp_t;
+
+typedef struct vc64_sbog_tmp
+{
+  u64  ipad_raw[8];
+  u64  opad_raw[8];
+
+  u64  ipad_hash[8];
+  u64  opad_hash[8];
+
+  u64  dgst[32];
+  u64  out[32];
+
+} vc64_sbog_tmp_t;
 
 typedef struct agilekey_tmp
 {
@@ -967,7 +1041,7 @@ typedef struct dpapimk_tmp_v2
   u64 dgst64[16];
   u64 out64[16];
 
-  u32 userKey[5];
+  u32 userKey[8];
 
 } dpapimk_tmp_v2_t;
 
@@ -1058,7 +1132,6 @@ typedef enum hash_type
   HASH_TYPE_ORACLEH             = 13,
   HASH_TYPE_DESRACF             = 14,
   HASH_TYPE_BCRYPT              = 15,
-  HASH_TYPE_KECCAK              = 16,
   HASH_TYPE_NETNTLM             = 17,
   HASH_TYPE_RIPEMD160           = 18,
   HASH_TYPE_WHIRLPOOL           = 19,
@@ -1084,8 +1157,8 @@ typedef enum hash_type
   HASH_TYPE_PBKDF2_SHA256       = 39,
   HASH_TYPE_BITCOIN_WALLET      = 40,
   HASH_TYPE_CRC32               = 41,
-  HASH_TYPE_GOST_2012SBOG_256   = 42,
-  HASH_TYPE_GOST_2012SBOG_512   = 43,
+  HASH_TYPE_STREEBOG_256        = 42,
+  HASH_TYPE_STREEBOG_512        = 43,
   HASH_TYPE_PBKDF2_MD5          = 44,
   HASH_TYPE_PBKDF2_SHA1         = 45,
   HASH_TYPE_PBKDF2_SHA512       = 46,
@@ -1113,6 +1186,9 @@ typedef enum hash_type
   HASH_TYPE_WPA_PMKID_PBKDF2    = 68,
   HASH_TYPE_WPA_PMKID_PMK       = 69,
   HASH_TYPE_ANSIBLE_VAULT       = 70,
+  HASH_TYPE_KRB5ASREP           = 71,
+  HASH_TYPE_ODF12               = 72,
+  HASH_TYPE_ODF11               = 73,
 
 } hash_type_t;
 
@@ -1184,7 +1260,6 @@ typedef enum kern_type
   KERN_TYPE_SHA1_MD5                = 4700,
   KERN_TYPE_MD5_CHAP                = 4800,
   KERN_TYPE_SHA1_SLT_PW_SLT         = 4900,
-  KERN_TYPE_KECCAK                  = 5000,
   KERN_TYPE_MD5H                    = 5100,
   KERN_TYPE_PSAFE3                  = 5200,
   KERN_TYPE_IKEPSK_MD5              = 5300,
@@ -1206,6 +1281,9 @@ typedef enum kern_type
   KERN_TYPE_VCSHA256_XTS512         = 13751,
   KERN_TYPE_VCSHA256_XTS1024        = 13752,
   KERN_TYPE_VCSHA256_XTS1536        = 13753,
+  KERN_TYPE_VCSBOG512_XTS512        = 13771,
+  KERN_TYPE_VCSBOG512_XTS1024       = 13772,
+  KERN_TYPE_VCSBOG512_XTS1536       = 13773,
   KERN_TYPE_MD5AIX                  = 6300,
   KERN_TYPE_SHA256AIX               = 6400,
   KERN_TYPE_SHA512AIX               = 6500,
@@ -1261,8 +1339,12 @@ typedef enum kern_type
   KERN_TYPE_SIP_AUTH                = 11400,
   KERN_TYPE_CRC32                   = 11500,
   KERN_TYPE_SEVEN_ZIP               = 11600,
-  KERN_TYPE_GOST_2012SBOG_256       = 11700,
-  KERN_TYPE_GOST_2012SBOG_512       = 11800,
+  KERN_TYPE_STREEBOG_256            = 11700,
+  KERN_TYPE_HMAC_STREEBOG_256_PW    = 11750,
+  KERN_TYPE_HMAC_STREEBOG_256_SLT   = 11760,
+  KERN_TYPE_STREEBOG_512            = 11800,
+  KERN_TYPE_HMAC_STREEBOG_512_PW    = 11850,
+  KERN_TYPE_HMAC_STREEBOG_512_SLT   = 11860,
   KERN_TYPE_PBKDF2_MD5              = 11900,
   KERN_TYPE_PBKDF2_SHA1             = 12000,
   KERN_TYPE_ECRYPTFS                = 12200,
@@ -1323,6 +1405,20 @@ typedef enum kern_type
   KERN_TYPE_WPA_PMKID_PBKDF2        = 16800,
   KERN_TYPE_WPA_PMKID_PMK           = 16801,
   KERN_TYPE_ANSIBLE_VAULT           = 16900,
+  KERN_TYPE_SHA3_224                = 17300,
+  KERN_TYPE_SHA3_256                = 17400,
+  KERN_TYPE_SHA3_384                = 17500,
+  KERN_TYPE_SHA3_512                = 17600,
+  KERN_TYPE_KECCAK_224              = 17700,
+  KERN_TYPE_KECCAK_256              = 17800,
+  KERN_TYPE_KECCAK_384              = 17900,
+  KERN_TYPE_KECCAK_512              = 18000,
+  KERN_TYPE_TOTP_HMACSHA1           = 18100,
+  KERN_TYPE_KRB5ASREP               = 18200,
+  KERN_TYPE_APFS                    = 18300,
+  KERN_TYPE_ODF12                   = 18400,
+  KERN_TYPE_SHA1_DOUBLE_MD5         = 18500,
+  KERN_TYPE_ODF11                   = 18600,
   KERN_TYPE_PLAINTEXT               = 99999,
 
 } kern_type_t;
@@ -1366,6 +1462,8 @@ typedef enum rounds_count
    ROUNDS_OFFICE2007         = 50000,
    ROUNDS_OFFICE2010         = 100000,
    ROUNDS_OFFICE2013         = 100000,
+   ROUNDS_LIBREOFFICE        = 100000,
+   ROUNDS_OPENOFFICE         = 1024,
    ROUNDS_DJANGOPBKDF2       = 20000,
    ROUNDS_SAPH_SHA1          = 1024,
    ROUNDS_PDF14              = (50 + 20),
@@ -1416,7 +1514,10 @@ int des_parse_hash                (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int episerver_parse_hash          (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int postgresql_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int netscreen_parse_hash          (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
-int keccak_parse_hash             (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int keccak_224_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int keccak_256_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int keccak_384_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int keccak_512_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int blake2b_parse_hash            (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int chacha20_parse_hash           (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int lm_parse_hash                 (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
@@ -1479,6 +1580,7 @@ int sha512grub_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int sha512b64s_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int krb5pa_parse_hash             (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int krb5tgs_parse_hash            (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int krb5asrep_parse_hash          (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int sapb_parse_hash               (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int sapg_parse_hash               (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int drupal7_parse_hash            (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
@@ -1536,8 +1638,8 @@ int bitcoin_wallet_parse_hash     (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int sip_auth_parse_hash           (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int crc32_parse_hash              (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int seven_zip_parse_hash          (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
-int gost2012sbog_256_parse_hash   (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
-int gost2012sbog_512_parse_hash   (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int streebog_256_parse_hash       (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int streebog_512_parse_hash       (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int pbkdf2_md5_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int pbkdf2_sha1_parse_hash        (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int pbkdf2_sha512_parse_hash      (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
@@ -1585,6 +1687,8 @@ int filevault2_parse_hash         (u8 *input_buf, u32 input_len, hash_t *hash_bu
 int wpa_pmkid_pbkdf2_parse_hash   (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int wpa_pmkid_pmk_parse_hash      (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 int ansible_vault_parse_hash      (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int totp_parse_hash               (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
+int apfs_parse_hash               (u8 *input_buf, u32 input_len, hash_t *hash_buf, MAYBE_UNUSED hashconfig_t *hashconfig);
 
 /**
  * hook functions

@@ -1084,8 +1084,6 @@ typedef struct salt
   u32 salt_iter2;
   u32 salt_sign[2];
 
-  u32 keccak_mdlen;
-
   u32 digests_cnt;
   u32 digests_done;
 
@@ -1160,7 +1158,6 @@ typedef struct blake2
   u64 f[2];
   u32 buflen;
   u32 outlen;
-  u8  last_node;
 
 } blake2_t;
 
@@ -1262,7 +1259,7 @@ typedef struct ikepsk
   u32 nr_len;
 
   u32 msg_buf[128];
-  u32 msg_len;
+  u32 msg_len[6];
 
 } ikepsk_t;
 
@@ -1292,10 +1289,28 @@ typedef struct krb5tgs
 {
   u32 account_info[512];
   u32 checksum[4];
-  u32 edata2[2560];
+  u32 edata2[5120];
   u32 edata2_len;
 
 } krb5tgs_t;
+
+typedef struct krb5asrep
+{
+  u32 account_info[512];
+  u32 checksum[4];
+  u32 edata2[5120];
+  u32 edata2_len;
+
+} krb5asrep_t;
+
+typedef struct keyboard_layout_mapping
+{
+  u32 src_char;
+  int src_len;
+  u32 dst_char;
+  int dst_len;
+
+} keyboard_layout_mapping_t;
 
 typedef struct tc
 {
@@ -1303,6 +1318,9 @@ typedef struct tc
   u32 data_buf[112];
   u32 keyfile_buf[16];
   u32 signature;
+
+  keyboard_layout_mapping_t keyboard_layout_mapping_buf[256];
+  int                       keyboard_layout_mapping_cnt;
 
 } tc_t;
 
@@ -1384,6 +1402,44 @@ typedef struct oldoffice34
   u32 rc4key[2];
 
 } oldoffice34_t;
+
+typedef struct odf11_tmp
+{
+  u32  ipad[5];
+  u32  opad[5];
+
+  u32  dgst[5];
+  u32  out[5];
+
+} odf11_tmp_t;
+
+typedef struct odf11
+{
+  u32 iterations;
+  u32 iv[2];
+  u32 checksum[5];
+  u32 encrypted_data[256];
+
+} odf11_t;
+
+typedef struct odf12_tmp
+{
+  u32  ipad[5];
+  u32  opad[5];
+
+  u32  dgst[10];
+  u32  out[10];
+
+} odf12_tmp_t;
+
+typedef struct odf12
+{
+  u32 iterations;
+  u32 iv[4];
+  u32 checksum[8];
+  u32 encrypted_data[256];
+
+} odf12_t;
 
 typedef struct pstoken
 {
@@ -1530,6 +1586,8 @@ typedef struct electrum_wallet
 
 typedef struct ansible_vault
 {
+  u32 cipher;
+  u32 version;
   u32 ct_data_buf[4096];
   u32 ct_data_len;
 } ansible_vault_t;
@@ -1705,6 +1763,19 @@ typedef struct tc64_tmp
   u64  out[32];
 
 } tc64_tmp_t;
+
+typedef struct vc64_sbog_tmp
+{
+  u64  ipad_raw[8];
+  u64  opad_raw[8];
+
+  u64  ipad_hash[8];
+  u64  opad_hash[8];
+
+  u64  dgst[32];
+  u64  out[32];
+
+} vc64_sbog_tmp_t;
 
 typedef struct pbkdf1_sha1_tmp
 {
@@ -1918,7 +1989,7 @@ typedef struct dpapimk_tmp_v2
   u64 dgst64[16];
   u64 out64[16];
 
-  u32 userKey[5];
+  u32 userKey[8];
 
 } dpapimk_tmp_v2_t;
 
@@ -2009,13 +2080,13 @@ typedef struct bs_word
 
 } bs_word_t;
 
-typedef struct
+typedef struct plain
 {
-  u32 salt_pos;
-  u32 digest_pos;
-  u32 hash_pos;
-  u64 gidvid;
-  u32 il_pos;
+  u64  gidvid;
+  u32  il_pos;
+  u32  salt_pos;
+  u32  digest_pos;
+  u32  hash_pos;
 
 } plain_t;
 
