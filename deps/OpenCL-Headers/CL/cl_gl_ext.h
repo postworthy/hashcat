@@ -38,7 +38,11 @@
 extern "C" {
 #endif
 
-#include <CL/cl_gl.h>
+#ifdef __APPLE__
+    #include <OpenCL/cl_gl.h>
+#else
+    #include <CL/cl_gl.h>
+#endif
 
 /*
  * For each extension, follow this template

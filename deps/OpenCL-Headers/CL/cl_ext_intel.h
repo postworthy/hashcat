@@ -52,8 +52,13 @@ Notes:
 #ifndef __CL_EXT_INTEL_H
 #define __CL_EXT_INTEL_H
 
-#include <CL/cl.h>
-#include <CL/cl_platform.h>
+#ifdef __APPLE__
+    #include <OpenCL/cl.h>
+    #include <OpenCL/cl_platform.h>
+#else
+    #include <CL/cl.h>
+    #include <CL/cl_platform.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -421,3 +426,4 @@ typedef cl_uint cl_diagnostics_verbose_level;
 #endif
 
 #endif /* __CL_EXT_INTEL_H */
+
