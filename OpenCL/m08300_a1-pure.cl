@@ -5,15 +5,16 @@
 
 //#define NEW_SIMD_CODE
 
-#include "inc_vendor.cl"
-#include "inc_hash_constants.h"
-#include "inc_hash_functions.cl"
-#include "inc_types.cl"
+#ifdef KERNEL_STATIC
+#include "inc_vendor.h"
+#include "inc_types.h"
+#include "inc_platform.cl"
 #include "inc_common.cl"
 #include "inc_scalar.cl"
 #include "inc_hash_sha1.cl"
+#endif
 
-__kernel void m08300_mxx (KERN_ATTR_BASIC ())
+KERNEL_FQ void m08300_mxx (KERN_ATTR_BASIC ())
 {
   /**
    * modifier
@@ -32,9 +33,9 @@ __kernel void m08300_mxx (KERN_ATTR_BASIC ())
 
   u32 s[64] = { 0 };
 
-  for (int i = 0, idx = 0; i < salt_len; i += 4, idx += 1)
+  for (u32 i = 0, idx = 0; i < salt_len; i += 4, idx += 1)
   {
-    s[idx] = swap32_S (salt_bufs[salt_pos].salt_buf[idx]);
+    s[idx] = hc_swap32_S (salt_bufs[salt_pos].salt_buf[idx]);
   }
 
   const u32 salt_len_pc = salt_bufs[salt_pos].salt_len_pc;
@@ -43,7 +44,7 @@ __kernel void m08300_mxx (KERN_ATTR_BASIC ())
 
   for (int i = 0, idx = 0; i < salt_len_pc; i += 4, idx += 1)
   {
-    s_pc[idx] = swap32_S (salt_bufs[salt_pos].salt_buf_pc[idx]);
+    s_pc[idx] = hc_swap32_S (salt_bufs[salt_pos].salt_buf_pc[idx]);
   }
 
   const u32 salt_iter = salt_bufs[salt_pos].salt_iter;
@@ -62,9 +63,9 @@ __kernel void m08300_mxx (KERN_ATTR_BASIC ())
 
     ctx1.len = 1;
 
-    sha1_update_global_swap (&ctx1, pws[gid].i, pws[gid].pw_len & 255);
+    sha1_update_global_swap (&ctx1, pws[gid].i, pws[gid].pw_len);
 
-    sha1_update_global_swap (&ctx1, combs_buf[il_pos].i, combs_buf[il_pos].pw_len & 255);
+    sha1_update_global_swap (&ctx1, combs_buf[il_pos].i, combs_buf[il_pos].pw_len);
 
     sha1_update (&ctx1, s_pc, salt_len_pc + 1);
 
@@ -116,7 +117,7 @@ __kernel void m08300_mxx (KERN_ATTR_BASIC ())
   }
 }
 
-__kernel void m08300_sxx (KERN_ATTR_BASIC ())
+KERNEL_FQ void m08300_sxx (KERN_ATTR_BASIC ())
 {
   /**
    * modifier
@@ -147,9 +148,9 @@ __kernel void m08300_sxx (KERN_ATTR_BASIC ())
 
   u32 s[64] = { 0 };
 
-  for (int i = 0, idx = 0; i < salt_len; i += 4, idx += 1)
+  for (u32 i = 0, idx = 0; i < salt_len; i += 4, idx += 1)
   {
-    s[idx] = swap32_S (salt_bufs[salt_pos].salt_buf[idx]);
+    s[idx] = hc_swap32_S (salt_bufs[salt_pos].salt_buf[idx]);
   }
 
   const u32 salt_len_pc = salt_bufs[salt_pos].salt_len_pc;
@@ -158,7 +159,7 @@ __kernel void m08300_sxx (KERN_ATTR_BASIC ())
 
   for (int i = 0, idx = 0; i < salt_len_pc; i += 4, idx += 1)
   {
-    s_pc[idx] = swap32_S (salt_bufs[salt_pos].salt_buf_pc[idx]);
+    s_pc[idx] = hc_swap32_S (salt_bufs[salt_pos].salt_buf_pc[idx]);
   }
 
   const u32 salt_iter = salt_bufs[salt_pos].salt_iter;
@@ -177,9 +178,9 @@ __kernel void m08300_sxx (KERN_ATTR_BASIC ())
 
     ctx1.len = 1;
 
-    sha1_update_global_swap (&ctx1, pws[gid].i, pws[gid].pw_len & 255);
+    sha1_update_global_swap (&ctx1, pws[gid].i, pws[gid].pw_len);
 
-    sha1_update_global_swap (&ctx1, combs_buf[il_pos].i, combs_buf[il_pos].pw_len & 255);
+    sha1_update_global_swap (&ctx1, combs_buf[il_pos].i, combs_buf[il_pos].pw_len);
 
     sha1_update (&ctx1, s_pc, salt_len_pc + 1);
 

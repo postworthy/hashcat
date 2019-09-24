@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ##
 ## Author......: See docs/credits.txt
@@ -32,6 +32,7 @@ cpan install Authen::Passphrase::LANManager \
              Crypt::Skip32                  \
              Crypt::Twofish                 \
              Crypt::UnixCrypt_XS            \
+             Data::Types                    \
              Digest::BLAKE2                 \
              Digest::CMAC                   \
              Digest::CRC                    \
@@ -56,7 +57,9 @@ cpan install Authen::Passphrase::LANManager \
 
 ERRORS=$((ERRORS+$?))
 
-pip2 install pygost
+pip2 install pygost pycryptoplus
+
+pip2 -y uninstall pycryptodome
 
 ERRORS=$((ERRORS+$?))
 
